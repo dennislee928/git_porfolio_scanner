@@ -4,3 +4,4 @@ scripts/new.sh
 
 data/
 artifacts/
+.DS_Store
