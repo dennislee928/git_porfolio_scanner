@@ -408,9 +408,6 @@ func buildStats(repos []Repo, userLogin string) Stats {
 		case "collaborator":
 			stats.CollaboratorRepos++
 		}
-		if strings.EqualFold(repo.Owner.Login, userLogin) {
-			stats.OwnerRepos++
-		}
 		if repo.Language != "" {
 			stats.LanguageRepoCount[repo.Language]++
 		}
