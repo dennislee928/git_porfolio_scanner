@@ -194,7 +194,7 @@ func repoScore(repo Repo, domain string, signals []string) float64 {
 	if strings.TrimSpace(repo.Description) != "" {
 		score += 4
 	}
-	if domain != "General Software" {
+	if domain != "Research, Prototypes, and Utilities" {
 		score += 5
 	}
 	if repo.Private {
@@ -693,7 +693,7 @@ func fallbackDomain(repo Repo) string {
 	case "python", "r", "jupyter notebook":
 		return "AI and Data Applications"
 	default:
-		return "General Software"
+		return "Research, Prototypes, and Utilities"
 	}
 }
 
@@ -796,10 +796,17 @@ func appendUnique(items []string, values ...string) []string {
 
 func publicSafeName(repo Repo) string {
 	if repo.Private {
-		if repo.Source != "" {
-			return "Private " + repo.Source + " repository"
+		switch repo.SourceType {
+		case "org":
+			if repo.Source != "" {
+				return "Private " + repo.Source + " org repository"
+			}
+			return "Private org repository"
+		case "collaborator":
+			return "Private collaborator repository"
+		default:
+			return "Private personal repository"
 		}
-		return "Private repository"
 	}
 	return repo.Name
 }

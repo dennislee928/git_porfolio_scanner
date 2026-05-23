@@ -60,6 +60,11 @@ type Org struct {
 	Login string `json:"login"`
 }
 
+type OrgMembership struct {
+	State        string `json:"state"`
+	Organization Org    `json:"organization"`
+}
+
 type User struct {
 	Login           string    `json:"login"`
 	Name            string    `json:"name"`
@@ -220,6 +225,18 @@ func main() {
 	}
 	for _, org := range orgs {
 		orgSet[org.Login] = true
+	}
+
+	fmt.Fprintln(os.Stderr, "\nFetching private org memberships...")
+	memberships, err := fetchAllPages[OrgMembership](baseURL + "/user/memberships/orgs?state=active")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  Warning: error fetching org memberships: %v\n", err)
+	} else {
+		for _, membership := range memberships {
+			if membership.Organization.Login != "" {
+				orgSet[membership.Organization.Login] = true
+			}
+		}
 	}
 
 	orgNames := make([]string, 0, len(orgSet))
