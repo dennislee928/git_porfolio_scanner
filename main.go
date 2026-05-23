@@ -1,6 +1,6 @@
-// github_scraper.go
-// Usage: GITHUB_PAT=<your_token> go run github_scraper.go
-// Output: repos.json in the current directory
+// main.go
+// Usage: GITHUB_PAT=<your_token> go run main.go
+// Output: repos.json (or GITHUB_OUTPUT_FILE if set)
 
 package main
 

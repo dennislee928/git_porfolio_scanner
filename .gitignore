@@ -1,4 +1,6 @@
-scripts/new.sh
 .env
 repos.json
-scripts/auto_commit.sh
+scripts/new.sh
+
+data/
+artifacts/
