@@ -86,14 +86,14 @@ type DomainCluster struct {
 }
 
 type Portfolio struct {
-	Input          Input
-	Scored         []ScoredRepo
-	PublicFeatured []ScoredRepo
-	CareerFeatured []ScoredRepo
+	Input           Input
+	Scored          []ScoredRepo
+	PublicFeatured  []ScoredRepo
+	CareerFeatured  []ScoredRepo
 	PrivateFeatured []ScoredRepo
-	Clusters       []DomainCluster
-	Languages      []string
-	SkillGroups    map[string][]string
+	Clusters        []DomainCluster
+	Languages       []string
+	SkillGroups     map[string][]string
 }
 
 func main() {
@@ -161,14 +161,14 @@ func buildPortfolio(in Input) Portfolio {
 
 	clusters := clusterRepos(scored)
 	return Portfolio{
-		Input:          in,
-		Scored:         scored,
-		PublicFeatured: firstN(filterRepos(scored, true), 8),
-		CareerFeatured: firstN(filterRepos(scored, false), 12),
+		Input:           in,
+		Scored:          scored,
+		PublicFeatured:  firstN(filterRepos(scored, true), 8),
+		CareerFeatured:  firstN(filterRepos(scored, false), 12),
 		PrivateFeatured: firstN(filterPrivateRepos(scored), 8),
-		Clusters:       clusters,
-		Languages:      rankedLanguages(in, 12),
-		SkillGroups:    skillGroups(in, clusters),
+		Clusters:        clusters,
+		Languages:       rankedLanguages(in, 12),
+		SkillGroups:     skillGroups(in, clusters),
 	}
 }
 
@@ -317,7 +317,11 @@ func buildProfileREADME(p Portfolio) string {
 	in := p.Input
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s | Technical Portfolio\n\n", displayName(in.User))
-	b.WriteString("I build software systems across backend services, security workflows, automation, cloud infrastructure, and product interfaces. This profile highlights public repositories; private and organization repositories are included in aggregate stack analysis.\n\n")
+	if len(in.OrgNames) > 0 {
+		b.WriteString("I build software systems across backend services, security workflows, automation, cloud infrastructure, and product interfaces. This profile highlights public repositories; private and organization repositories are included in aggregate stack analysis.\n\n")
+	} else {
+		b.WriteString("I build software systems across backend services, security workflows, automation, cloud infrastructure, and product interfaces. This profile highlights public repositories; private repositories are included in aggregate stack analysis. Re-run the scraper to refresh organization coverage.\n\n")
+	}
 
 	b.WriteString("## Architecture Map\n\n")
 	for _, c := range firstN(p.Clusters, 6) {
@@ -353,7 +357,7 @@ func buildLinkedInGuide(p Portfolio) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# LinkedIn Optimization for %s\n\n", displayName(in.User))
 	b.WriteString("## Positioning\n\n")
-	fmt.Fprintf(&b, "Use the portfolio scale as proof: %d accessible repositories across %d organizations, including private and organization work. LinkedIn should emphasize breadth, execution, and role fit rather than listing every repository.\n\n", len(in.Repos), len(in.OrgNames))
+	fmt.Fprintf(&b, "Use the portfolio scale as proof: %d accessible repositories across %d organizations and %d private repositories. LinkedIn should emphasize breadth, execution, and role fit rather than listing every repository.\n\n", len(in.Repos), len(in.OrgNames), in.Stats.PrivateRepos)
 
 	b.WriteString("## Headline Options\n\n")
 	b.WriteString("- Software Engineer | Backend, Platform Automation, Security Workflows\n")
@@ -361,7 +365,11 @@ func buildLinkedInGuide(p Portfolio) string {
 	b.WriteString("- Software Engineer | Product Engineering, DevOps Automation, Cybersecurity\n\n")
 
 	b.WriteString("## About Section Draft\n\n")
-	fmt.Fprintf(&b, "Software engineer with a broad GitHub portfolio spanning %s. I build backend services, product interfaces, automation workflows, and security-oriented systems, with experience across personal, private, and organization repositories.\n\n", joinClusterNames(p.Clusters, 5))
+	if len(in.OrgNames) > 0 {
+		fmt.Fprintf(&b, "Software engineer with a broad GitHub portfolio spanning %s. I build backend services, product interfaces, automation workflows, and security-oriented systems, with experience across personal, private, and organization repositories.\n\n", joinClusterNames(p.Clusters, 5))
+	} else {
+		fmt.Fprintf(&b, "Software engineer with a broad GitHub portfolio spanning %s. I build backend services, product interfaces, automation workflows, and security-oriented systems, with public and private repository evidence.\n\n", joinClusterNames(p.Clusters, 5))
+	}
 	fmt.Fprintf(&b, "My strongest stack signals are %s. I work best where engineering needs to connect product delivery, system reliability, developer velocity, and practical security thinking.\n\n", strings.Join(firstN(p.Languages, 6), ", "))
 
 	b.WriteString("## Skills to Pin\n\n")
@@ -467,10 +475,10 @@ func buildCareerPortfolio(p Portfolio) string {
 	}
 
 	b.WriteString("\n## Private/Internal Proof to Use in Resume and Interviews\n\n")
-	for _, item := range firstN(privateRepos(p.CareerFeatured), 8) {
+	for _, item := range p.PrivateFeatured {
 		fmt.Fprintf(&b, "- %s: %s with %s\n", publicSafeName(item.Repo), item.System, stackLabel(item.Repo))
 	}
-	if len(privateRepos(p.CareerFeatured)) == 0 {
+	if len(p.PrivateFeatured) == 0 {
 		b.WriteString("- No private repositories ranked in the top career evidence set. Re-run after the improved scraper collects the full private/org inventory.\n")
 	}
 
@@ -500,7 +508,7 @@ func inferDomain(repo Repo) string {
 	case hasAny(text, "api", "backend", "grpc", "graphql", "service", "microservice"):
 		return "Backend and API Systems"
 	default:
-		return "General Software"
+		return fallbackDomain(repo)
 	}
 }
 
@@ -660,11 +668,54 @@ func repoText(repo Repo) string {
 
 func hasAny(text string, tokens ...string) bool {
 	for _, token := range tokens {
+		token = strings.ToLower(token)
+		if len(token) <= 3 && isPlainToken(token) {
+			if strings.Contains(" "+normalizedWords(text)+" ", " "+token+" ") {
+				return true
+			}
+			continue
+		}
 		if strings.Contains(text, token) {
 			return true
 		}
 	}
 	return false
+}
+
+func fallbackDomain(repo Repo) string {
+	switch strings.ToLower(repo.Language) {
+	case "go", "java", "c", "c++", "rust":
+		return "Backend and Systems Engineering"
+	case "typescript", "javascript", "vue", "html", "css":
+		return "Full-Stack Product Engineering"
+	case "hcl", "shell", "makefile", "dockerfile":
+		return "Cloud and Platform Engineering"
+	case "python", "r", "jupyter notebook":
+		return "AI and Data Applications"
+	default:
+		return "General Software"
+	}
+}
+
+func isPlainToken(token string) bool {
+	for _, r := range token {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizedWords(text string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(text) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteByte(' ')
+	}
+	return strings.Join(strings.Fields(b.String()), " ")
 }
 
 func clusterSignal(c DomainCluster) string {
@@ -711,16 +762,6 @@ func repoList(items []ScoredRepo, limit int) string {
 		names = append(names, publicSafeName(item.Repo))
 	}
 	return strings.Join(names, ", ")
-}
-
-func privateRepos(items []ScoredRepo) []ScoredRepo {
-	out := []ScoredRepo{}
-	for _, item := range items {
-		if item.Repo.Private {
-			out = append(out, item)
-		}
-	}
-	return out
 }
 
 func joinClusterNames(clusters []DomainCluster, limit int) string {
