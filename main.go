@@ -134,7 +134,9 @@ func main() {
 
 	// 2. Fetch all personal repos
 	fmt.Fprintln(os.Stderr, "\nFetching personal repos (public + private)...")
-	personalRepos, err := fetchAllPages[Repo](baseURL + "/user/repos?type=all&sort=updated&affiliation=owner")
+	// GitHub rejects combining `type` with `affiliation` on /user/repos.
+	// `affiliation=owner` returns both public and private repos you own.
+	personalRepos, err := fetchAllPages[Repo](baseURL + "/user/repos?sort=updated&affiliation=owner")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching personal repos: %v\n", err)
 		os.Exit(1)
