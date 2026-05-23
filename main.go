@@ -216,7 +216,10 @@ func main() {
 	}
 
 	// 6. Write JSON output
-	outFile := "repos.json"
+	outFile := os.Getenv("GITHUB_OUTPUT_FILE")
+	if outFile == "" {
+		outFile = "repos.json"
+	}
 	f, err := os.Create(outFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating output file: %v\n", err)

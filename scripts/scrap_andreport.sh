@@ -4,7 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Load .env from repo root if present.
 if [[ -f "$REPO_ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -18,4 +17,15 @@ if [[ -z "${GITHUB_PAT:-}" ]]; then
 fi
 
 cd "$REPO_ROOT"
-go run 1.go
+mkdir -p data
+
+out="data/repos_$(date +%Y%m%d_%H%M%S).json"
+echo "[1/2] Scraping repos into $out"
+GITHUB_OUTPUT_FILE="$out" go run main.go
+
+ln -sf "$(basename "$out")" data/latest_repos.json
+
+echo "[2/2] Generating profile/report artifacts"
+go run scripts/analyze.go --input "$out" --output-dir artifacts
+
+echo "Done. See artifacts/ and data/latest_repos.json"
