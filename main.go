@@ -92,14 +92,14 @@ type Stats struct {
 }
 
 type Output struct {
-	User       User      `json:"user"`
-	Repos      []Repo    `json:"repos"`
-	TotalRepos int       `json:"total_repos"`
+	User       User           `json:"user"`
+	Repos      []Repo         `json:"repos"`
+	TotalRepos int            `json:"total_repos"`
 	Languages  map[string]int `json:"languages"`
 	Topics     map[string]int `json:"topics"`
-	OrgNames   []string  `json:"orgs"`
-	Stats      Stats     `json:"stats"`
-	ScrapedAt  time.Time `json:"scraped_at"`
+	OrgNames   []string       `json:"orgs"`
+	Stats      Stats          `json:"stats"`
+	ScrapedAt  time.Time      `json:"scraped_at"`
 }
 
 var pat string
