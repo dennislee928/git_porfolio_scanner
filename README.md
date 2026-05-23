@@ -41,6 +41,7 @@ This runs:
   - `artifacts/github_profile_README.md`
   - `artifacts/linkedin_optimization.md`
   - `artifacts/resume_master.md`
+  - `artifacts/career_portfolio.md`
 
 ## Recommended Workflow (for tremendous repo volume)
 
